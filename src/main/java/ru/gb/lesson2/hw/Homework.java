@@ -21,14 +21,19 @@ public class Homework {
 
   static class MyTest {
 
-    @Test
+    @Test(order = -2)
     void firstTest() {
       System.out.println("firstTest запущен");
     }
 
-    @Test
+    @Test(order = 5)
     void secondTest() {
       System.out.println("secondTest запущен");
+    }
+
+    @Test
+    void thirdTest() {
+      System.out.println("thirdTest запущен");
     }
 
   }
