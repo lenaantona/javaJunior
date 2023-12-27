@@ -13,11 +13,6 @@ import java.util.Scanner;
 
 public class Server {
 
-  // message broker (kafka, redis, rabbitmq, ...)
-  // client sent letter to broker
-
-  // server sent to SMTP-server
-
   public static final int PORT = 8181;
 
   private static long clientIdCounter = 1L;
@@ -30,6 +25,7 @@ public class Server {
         final Socket client = server.accept();
         final long clientId = clientIdCounter++;
 
+
         SocketWrapper wrapper = new SocketWrapper(clientId, client);
         System.out.println("Подключился новый клиент[" + wrapper + "]");
         clients.put(clientId, wrapper);
@@ -40,17 +36,32 @@ public class Server {
 
             while (true) {
               String clientInput = input.nextLine();
+              //при сообщении admin сервер поймет, что подлкючился админ
+              if (Objects.equals("admin", clientInput)){
+                wrapper.setAdmin(true);
+                output.println("Вы подключились как админ");
+              }
+              //формат kick id
+              if (clientInput.substring(0, 4).equals("kick")){
+                long destinationId = Long.parseLong(clientInput.substring(5, 6));
+                SocketWrapper destination = clients.get(destinationId);
+                clients.remove(destinationId);
+                clients.values().forEach(it -> it.getOutput().println("Клиент[" + destinationId + "] отключился"));
+              }
               if (Objects.equals("q", clientInput)) {
                 // todo разослать это сообщение всем остальным клиентам
                 clients.remove(clientId);
                 clients.values().forEach(it -> it.getOutput().println("Клиент[" + clientId + "] отключился"));
                 break;
               }
-
-              // формат сообщения: "цифра сообщение"
-              long destinationId = Long.parseLong(clientInput.substring(0, 1));
-              SocketWrapper destination = clients.get(destinationId);
-              destination.getOutput().println(clientInput);
+              if (clientInput.substring(0, 1).equals("@")) {
+                long destinationId = Long.parseLong(clientInput.substring(1, 2));
+                SocketWrapper destination = clients.get(destinationId);
+                destination.getOutput().println(clientInput);
+              }else {
+                if (!Objects.equals("admin", clientInput))
+                clients.values().stream().filter(it -> !it.equals(clients.get(clientId))).forEach(it -> it.getOutput().println(clientInput));
+              }
             }
           }
         }).start();
@@ -68,6 +79,8 @@ class SocketWrapper implements AutoCloseable {
   private final Scanner input;
   private final PrintWriter output;
 
+  private boolean admin = false;
+
   SocketWrapper(long id, Socket socket) throws IOException {
     this.id = id;
     this.socket = socket;
@@ -82,6 +95,10 @@ class SocketWrapper implements AutoCloseable {
 
   @Override
   public String toString() {
-    return String.format("%s", socket.getInetAddress().toString());
+    return String.format("%s, %s", socket.getInetAddress().toString(), id);
+  }
+
+  public void setAdmin(boolean admin) {
+    this.admin = admin;
   }
 }

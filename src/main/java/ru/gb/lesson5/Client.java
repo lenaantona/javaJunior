@@ -7,7 +7,6 @@ import java.util.Objects;
 import java.util.Scanner;
 
 public class Client {
-
   public static void main(String[] args) throws IOException {
     final Socket client = new Socket("localhost", Server.PORT);
     // чтение
